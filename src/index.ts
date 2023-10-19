@@ -1,16 +1,24 @@
+import { TransactionFactory } from "web3-eth-accounts";
 import { Web3PluginBase } from "web3";
+import { BlobEIP4844Transaction, TransactionType } from "./eip4844";
 
-export class TemplatePlugin extends Web3PluginBase {
-  public pluginNamespace = "template";
+export class Web3TxEIP4844Plugin extends Web3PluginBase {
+  public pluginNamespace = "txTypeEIP4844Plugin";
 
-  public test(param: string): void {
-    console.log(param);
+  public constructor() {
+    super();
+    // @ts-ignore
+    TransactionFactory.registerTransactionType(
+      // @ts-ignore
+      Number(TransactionType.BlobEIP4844),
+      // @ts-ignore
+      BlobEIP4844Transaction
+    );
   }
 }
 
-// Module Augmentation
 declare module "web3" {
   interface Web3Context {
-    template: TemplatePlugin;
+    txTypeEIP4844Plugin: Web3TxEIP4844Plugin;
   }
 }
