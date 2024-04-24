@@ -18,7 +18,7 @@ describe('Web3BlobTxPlugin Tests', () => {
 	});
 
 	it('estimateGas', async () => {
-		const txData = {
+		const txData: Partial<BlobTransaction> = {
 			from: '0x7ed0e85b8e1e925600b4373e6d108f34ab38a401',
 			to: '0x7ed0e85b8e1e925600b4373e6d108f34ab38a401',
 			value: '0x0',
@@ -28,7 +28,7 @@ describe('Web3BlobTxPlugin Tests', () => {
 			maxFeePerBlobGas: 29458962313n,
 			blobsData: ['any data text'],
 		};
-		expect(Number(await web3.blobTx.estimateGas(txData as BlobTransaction))).toBeGreaterThan(0);
+		expect(Number(await web3.blobTx.estimateGas(txData))).toBeGreaterThan(0);
 	});
 	it('getTransactionReceipt', async () => {
 		const receipt = await web3.blobTx.getTransactionReceipt(
@@ -39,8 +39,6 @@ describe('Web3BlobTxPlugin Tests', () => {
 		expect(Number(receipt?.blobGasUsed)).toBeGreaterThan(0);
 	});
 	it('sendTransaction', async () => {
-		web3.defaultHardfork = 'cancun';
-		web3.defaultChain = 'sepolia';
 		const acc = web3.eth.accounts.privateKeyToAccount(String(process.env.PRIVATE_KEY));
 		web3.eth.accounts.wallet.add(acc);
 
