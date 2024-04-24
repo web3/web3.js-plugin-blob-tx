@@ -21,13 +21,13 @@ import {
 } from 'web3-types';
 import { Web3PromiEvent, Web3PluginBase } from 'web3-core';
 import {
-	// @ts-ignore
+	// @ts-ignore temporary fix, wait for new web3js release with exported methods
 	getTransactionFromOrToAttr,
-	// @ts-ignore
+	// @ts-ignore temporary fix, wait for new web3js release with exported methods
 	waitForTransactionReceipt,
-	// @ts-ignore
+	// @ts-ignore temporary fix, wait for new web3js release with exported methods
 	trySendTransaction,
-	// @ts-ignore
+	// @ts-ignore temporary fix, wait for new web3js release with exported methods
 	SendTxHelper,
 	SendTransactionEvents,
 	SendTransactionOptions,
@@ -121,7 +121,6 @@ export class Web3BlobTxPlugin extends Web3PluginBase {
 		},
 	): Web3PromiEvent<ResolveType, SendTransactionEvents<ReturnFormat>> {
 		const promiEvent = new Web3PromiEvent<ResolveType, SendTransactionEvents<ReturnFormat>>(
-			// @ts-ignore
 			(resolve, reject) => {
 				setImmediate(async () => {
 					// eslint-disable-next-line @typescript-eslint/no-unsafe-call
@@ -131,8 +130,7 @@ export class Web3BlobTxPlugin extends Web3PluginBase {
 						options,
 						returnFormat,
 					});
-					// @ts-ignore
-					let transactionFormatted: Transaction = format(
+					let transactionFormatted: BlobTransaction = format(
 						blobTransactionSchema,
 						{
 							...transaction,
@@ -148,7 +146,7 @@ export class Web3BlobTxPlugin extends Web3PluginBase {
 							),
 						},
 						ETH_DATA_FORMAT,
-					);
+					) as BlobTransaction;
 
 					try {
 						transactionFormatted = (await sendTxHelper.populateGasPrice({
