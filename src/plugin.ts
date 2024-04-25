@@ -1,40 +1,40 @@
-import { BlobEIP4844Transaction, JsonTx } from '@ethereumjs/tx';
 import { Common } from '@ethereumjs/common';
-import { bytesToHex, Kzg, toBytes } from '@ethereumjs/util';
+import type { JsonTx } from '@ethereumjs/tx';
+import { BlobEIP4844Transaction } from '@ethereumjs/tx';
+import type { Kzg } from '@ethereumjs/util';
+import { bytesToHex, toBytes } from '@ethereumjs/util';
 import { loadKZG } from 'kzg-wasm';
-import { validator } from 'web3-validator';
-import { Web3Context } from 'web3';
-import { ethRpcMethods } from 'web3-rpc-methods';
+import type { Web3Context } from 'web3';
+import { Web3PromiEvent, Web3PluginBase } from 'web3-core';
+import { TransactionNotFound } from 'web3-errors';
+import type { SendTransactionEvents, SendTransactionOptions } from 'web3-eth';
 import {
+	getTransactionFromOrToAttr,
+	waitForTransactionReceipt,
+	trySendTransaction,
+	SendTxHelper,
+	formatTransaction,
+} from 'web3-eth';
+import { ethRpcMethods } from 'web3-rpc-methods';
+import type {
 	Address,
-	ETH_DATA_FORMAT,
 	Bytes,
 	HexString,
-	TransactionReceipt,
 	FormatType,
 	Numbers,
 	TransactionWithFromAndToLocalWalletIndex,
 	TransactionCall,
 	EthExecutionAPI,
 	DataFormat,
-	DEFAULT_RETURN_FORMAT,
+	BlockNumberOrTag,
+	BlockTag,
 } from 'web3-types';
-import { Web3PromiEvent, Web3PluginBase } from 'web3-core';
-import {
-	// @ts-ignore temporary fix, wait for new web3js release with exported methods
-	getTransactionFromOrToAttr,
-	// @ts-ignore temporary fix, wait for new web3js release with exported methods
-	waitForTransactionReceipt,
-	// @ts-ignore temporary fix, wait for new web3js release with exported methods
-	trySendTransaction,
-	// @ts-ignore temporary fix, wait for new web3js release with exported methods
-	SendTxHelper,
-	SendTransactionEvents,
-	SendTransactionOptions,
-} from 'web3-eth';
+import { ETH_DATA_FORMAT, DEFAULT_RETURN_FORMAT, FMT_BYTES, FMT_NUMBER } from 'web3-types';
 import { format, isNullish } from 'web3-utils';
-import type { BlobTransaction, BlobTransactionReceipt } from './types';
+import { isBlockTag, isBytes, validator } from 'web3-validator';
+
 import { blobTransactionReceiptSchema, blobTransactionSchema } from './schemas';
+import type { BlobTransaction, BlobTransactionReceipt } from './types';
 
 export class Web3BlobTxPlugin extends Web3PluginBase {
 	public pluginNamespace = 'blobTx';
@@ -56,11 +56,18 @@ export class Web3BlobTxPlugin extends Web3PluginBase {
 			eips: [4844],
 			customCrypto: customCrypto ?? this.crypto,
 		});
+		const f = { number: FMT_NUMBER.BIGINT, bytes: FMT_BYTES.UINT8ARRAY };
+
 		return BlobEIP4844Transaction.fromTxData(
-			{
-				type: 5,
-				...txData,
-			},
+			// @ts-ignore
+			format(
+				blobTransactionSchema,
+				{
+					type: 3,
+					...txData,
+				} as BlobTransaction,
+				f,
+			),
 			{
 				common,
 			},
@@ -107,12 +114,12 @@ export class Web3BlobTxPlugin extends Web3PluginBase {
 			blobTx.toJSON() as BlobTransaction,
 			blockNumber,
 		)) as Numbers;
-		return format({ format: 'uint' }, gas as Numbers, returnFormat ?? this.defaultReturnFormat);
+		return format({ format: 'uint' }, gas, returnFormat ?? this.defaultReturnFormat);
 	}
 
 	public sendTransaction<
 		ReturnFormat extends DataFormat,
-		ResolveType = FormatType<TransactionReceipt, ReturnFormat>,
+		ResolveType = FormatType<BlobTransactionReceipt, ReturnFormat>,
 	>(
 		transaction: BlobTransaction,
 		returnFormat: ReturnFormat = this.defaultReturnFormat as ReturnFormat,
@@ -154,7 +161,7 @@ export class Web3BlobTxPlugin extends Web3PluginBase {
 							transactionFormatted: transactionFormatted,
 						})) as BlobTransaction;
 
-						await sendTxHelper.checkRevertBeforeSending(transactionFormatted);
+						await sendTxHelper.checkRevertBeforeSending(transactionFormatted as TransactionCall);
 
 						sendTxHelper.emitSending(transactionFormatted);
 
@@ -176,12 +183,15 @@ export class Web3BlobTxPlugin extends Web3PluginBase {
 						sendTxHelper.emitSent(transactionFormatted);
 						sendTxHelper.emitTransactionHash(transactionHashFormatted as string & Uint8Array);
 
-						const transactionReceipt = await waitForTransactionReceipt(
+						const transactionReceipt = await waitForTransactionReceipt<ReturnFormat>(
 							this,
 							transactionHash,
 							returnFormat ?? this.defaultReturnFormat,
-							(_: Web3Context, transactionHash: Bytes, returnFormat: ReturnFormat) =>
-								this.getTransactionReceipt(transactionHash, returnFormat),
+							async (_: Web3Context, transactionHash: Bytes, returnFormat: ReturnFormat) =>
+								(await this.getTransactionReceipt<ReturnFormat>(
+									transactionHash,
+									returnFormat,
+								)) as BlobTransactionReceipt,
 						);
 
 						const transactionReceiptFormatted = sendTxHelper.getReceiptWithEvents(
@@ -192,7 +202,7 @@ export class Web3BlobTxPlugin extends Web3PluginBase {
 							),
 						);
 
-						sendTxHelper.emitReceipt(transactionReceiptFormatted as TransactionReceipt);
+						sendTxHelper.emitReceipt(transactionReceiptFormatted);
 
 						resolve(
 							await sendTxHelper.handleResolve({
@@ -219,10 +229,66 @@ export class Web3BlobTxPlugin extends Web3PluginBase {
 		);
 		return promiEvent;
 	}
+
+	public async getTransaction<ReturnFormat extends DataFormat = typeof DEFAULT_RETURN_FORMAT>(
+		transactionHash: Bytes,
+		returnFormat: ReturnFormat = this.defaultReturnFormat as ReturnFormat,
+	): Promise<FormatType<BlobTransaction, ReturnFormat> | undefined> {
+		const transactionHashFormatted = format(
+			{ format: 'bytes32' },
+			transactionHash,
+			DEFAULT_RETURN_FORMAT,
+		);
+		const response = await ethRpcMethods.getTransactionByHash(
+			this.requestManager,
+			transactionHashFormatted,
+		);
+
+		if (!response) throw new TransactionNotFound();
+
+		return isNullish(response)
+			? response
+			: (formatTransaction<ReturnFormat>(response, returnFormat, {
+					fillInputAndData: true,
+					transactionSchema: blobTransactionSchema,
+				}) as FormatType<BlobTransaction, ReturnFormat>);
+	}
+	public async getTransactionFromBlock<ReturnFormat extends DataFormat>(
+		block: Bytes | BlockNumberOrTag = this.defaultBlock,
+		transactionIndex: Numbers,
+		returnFormat: ReturnFormat = this.defaultReturnFormat as ReturnFormat,
+	): Promise<FormatType<BlobTransaction, ReturnFormat> | undefined> {
+		const transactionIndexFormatted = format({ format: 'uint' }, transactionIndex, ETH_DATA_FORMAT);
+
+		let response;
+		if (isBytes(block)) {
+			const blockHashFormatted = format({ format: 'bytes32' }, block, ETH_DATA_FORMAT);
+			response = await ethRpcMethods.getTransactionByBlockHashAndIndex(
+				this.requestManager,
+				blockHashFormatted as HexString,
+				transactionIndexFormatted,
+			);
+		} else {
+			const blockNumberFormatted = isBlockTag(block as string)
+				? (block as BlockTag)
+				: format({ format: 'uint' }, block as Numbers, ETH_DATA_FORMAT);
+			response = await ethRpcMethods.getTransactionByBlockNumberAndIndex(
+				this.requestManager,
+				blockNumberFormatted,
+				transactionIndexFormatted,
+			);
+		}
+		return isNullish(response)
+			? response
+			: (formatTransaction<ReturnFormat>(response, returnFormat, {
+					fillInputAndData: true,
+					transactionSchema: blobTransactionSchema,
+				}) as FormatType<BlobTransaction, ReturnFormat>);
+	}
 	async getTransactionReceipt<ReturnFormat extends DataFormat>(
 		transactionHash: Bytes,
 		returnFormat: ReturnFormat = this.defaultReturnFormat as ReturnFormat,
-	) {
+	): Promise<FormatType<BlobTransactionReceipt, ReturnFormat> | undefined> {
 		const transactionHashFormatted = format(
 			{ format: 'bytes32' },
 			transactionHash,
@@ -235,11 +301,11 @@ export class Web3BlobTxPlugin extends Web3PluginBase {
 
 		return isNullish(response)
 			? response
-			: (format(
+			: format(
 					blobTransactionReceiptSchema,
 					response as unknown as BlobTransactionReceipt,
 					returnFormat ?? this.defaultReturnFormat,
-				) as BlobTransactionReceipt);
+				);
 	}
 }
 

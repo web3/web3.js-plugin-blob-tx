@@ -14,7 +14,7 @@ export const blobTransactionSchema = {
 		 * The maximum fee per blob gas paid for the transaction
 		 */
 		maxFeePerBlobGas: {
-			type: 'number',
+			format: 'uint',
 		},
 		/**
 		 * The blobs associated with a transaction
@@ -51,6 +51,15 @@ export const blobTransactionSchema = {
 			items: {
 				format: 'string',
 			},
+		},
+		hash: {
+			format: 'bytes32',
+		},
+		blockHash: {
+			format: 'bytes32',
+		},
+		blockNumber: {
+			format: 'uint',
 		},
 	},
 };

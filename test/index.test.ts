@@ -1,8 +1,10 @@
-import { Web3 } from 'web3';
 import { config } from 'dotenv';
-import { Numbers, TransactionHash } from 'web3-types';
-import { Web3BlobTxPlugin, BlobTransaction } from '../src';
-import { BlobTransactionReceipt } from '../lib';
+import { Web3 } from 'web3';
+import type { Numbers, TransactionHash } from 'web3-types';
+
+import type { BlobTransactionReceipt } from '../lib';
+import type { BlobTransaction } from '../src';
+import { Web3BlobTxPlugin } from '../src';
 
 jest.setTimeout(100000);
 config();
@@ -25,7 +27,7 @@ describe('Web3BlobTxPlugin Tests', () => {
 			gasLimit: 5000000,
 			maxPriorityFeePerGas: 22380075395,
 			maxFeePerGas: 22380075395,
-			maxFeePerBlobGas: 29458962313n,
+			maxFeePerBlobGas: 265500069017,
 			blobsData: ['any data text'],
 		};
 		expect(Number(await web3.blobTx.estimateGas(txData))).toBeGreaterThan(0);
@@ -38,7 +40,23 @@ describe('Web3BlobTxPlugin Tests', () => {
 		expect(Number(receipt?.blobGasPrice)).toBeGreaterThan(0);
 		expect(Number(receipt?.blobGasUsed)).toBeGreaterThan(0);
 	});
-	it('sendTransaction', async () => {
+	it('getTransaction', async () => {
+		const tx = await web3.blobTx.getTransaction(
+			'0xccd8a71976c4c40150ef69cb3a551227d06e3227be54bccd4e2abb52b66ac520',
+		);
+		expect(tx).toBeDefined();
+		expect(Number(tx?.maxFeePerBlobGas)).toBeGreaterThan(0);
+		expect(tx?.blobVersionedHashes).toBeDefined();
+		expect(tx?.blobVersionedHashes?.length).toBe(1);
+	});
+	it('getTransactionFromBlock', async () => {
+		const tx = await web3.blobTx.getTransactionFromBlock(5769496, 90);
+		expect(tx).toBeDefined();
+		expect(Number(tx?.maxFeePerBlobGas)).toBeGreaterThan(0);
+		expect(tx?.blobVersionedHashes).toBeDefined();
+		expect(tx?.blobVersionedHashes?.length).toBe(1);
+	});
+	it.skip('sendTransaction', async () => {
 		const acc = web3.eth.accounts.privateKeyToAccount(String(process.env.PRIVATE_KEY));
 		web3.eth.accounts.wallet.add(acc);
 
