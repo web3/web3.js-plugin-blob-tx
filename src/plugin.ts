@@ -1,6 +1,7 @@
 import { Common } from '@ethereumjs/common';
 import type { JsonTx } from '@ethereumjs/tx';
 import { BlobEIP4844Transaction } from '@ethereumjs/tx';
+import type { BlobEIP4844TxData } from '@ethereumjs/tx/src/types';
 import type { Kzg } from '@ethereumjs/util';
 import { bytesToHex, toBytes } from '@ethereumjs/util';
 import { loadKZG } from 'kzg-wasm';
@@ -56,18 +57,17 @@ export class Web3BlobTxPlugin extends Web3PluginBase {
 			eips: [4844],
 			customCrypto: customCrypto ?? this.crypto,
 		});
-		const f = { number: FMT_NUMBER.BIGINT, bytes: FMT_BYTES.UINT8ARRAY };
+		const transactionFormat = { number: FMT_NUMBER.HEX, bytes: FMT_BYTES.UINT8ARRAY };
 
 		return BlobEIP4844Transaction.fromTxData(
-			// @ts-ignore
 			format(
 				blobTransactionSchema,
 				{
 					type: 3,
 					...txData,
-				} as BlobTransaction,
-				f,
-			),
+				},
+				transactionFormat,
+			) as BlobEIP4844TxData,
 			{
 				common,
 			},
