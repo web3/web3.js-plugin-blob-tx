@@ -19,7 +19,9 @@ web3.defaultHardfork = 'cancun'; // set hardfork which support blob transactions
 web3.defaultChain = 'sepolia'; // set chain which support blob transactions
 ```
 
-### Send transaction
+### Methods
+
+#### sendTransaction
 ```typescript
 // add account to sign transaction
 const acc = web3.eth.accounts.privateKeyToAccount(String(process.env.PRIVATE_KEY));
@@ -68,7 +70,7 @@ const receipt = await res; // and get receipt here
 
 ```
 
-### Estimate gas
+#### estimateGas
 ```typescript
 import {BlobTransaction} from 'web3-plugin-blob-tx';
 
@@ -85,9 +87,19 @@ const txData:Partial<BlobTransaction> = {
 const gas = await web3.blobTx.estimateGas(txData);
 ```
 
-### GetTransactionReceipt
+#### getTransactionReceipt
 ```typescript
-const receipt = await web3.blobTx.getTransactionReceipt(/*transaction hash*/);
+const receipt = await web3.blobTx.getTransactionReceipt(/* transaction hash */);
+```
+
+#### getTransaction
+```typescript
+const transaction = await web3.blobTx.getTransaction(/* transaction hash */);
+```
+
+#### getTransactionFromBlock
+```typescript
+const transaction = await web3.blobTx.getTransactionFromBlock(/* block number or tag */, /* transaction index */);
 ```
 
 Contributing
