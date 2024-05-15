@@ -102,7 +102,7 @@ export class Web3BlobTxPlugin extends Web3PluginBase {
 	public async sendRawTransaction(serializedTx: string): Promise<string> {
 		return ethRpcMethods.sendRawTransaction(this.requestManager, serializedTx);
 	}
-
+	// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 	public async estimateGas<ReturnFormat extends DataFormat>(
 		tx: Partial<BlobTransaction>,
 		blockNumber: Numbers = 'latest',
@@ -129,9 +129,10 @@ export class Web3BlobTxPlugin extends Web3PluginBase {
 	): Web3PromiEvent<ResolveType, SendTransactionEvents<ReturnFormat>> {
 		const promiEvent = new Web3PromiEvent<ResolveType, SendTransactionEvents<ReturnFormat>>(
 			(resolve, reject) => {
+				// eslint-disable-next-line @typescript-eslint/no-misused-promises
 				setImmediate(async () => {
-					// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 					const sendTxHelper = new SendTxHelper<ReturnFormat, ResolveType, BlobTransaction>({
+						// eslint-disable-next-line @typescript-eslint/no-explicit-any
 						web3Context: this as Web3Context<EthExecutionAPI, any>,
 						promiEvent,
 						options,
@@ -156,6 +157,7 @@ export class Web3BlobTxPlugin extends Web3PluginBase {
 					) as BlobTransaction;
 
 					try {
+						// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
 						transactionFormatted = (await sendTxHelper.populateGasPrice({
 							transaction: transaction,
 							transactionFormatted: transactionFormatted,

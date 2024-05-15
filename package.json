@@ -9,7 +9,8 @@
     "url": "https://github.com/web3/web3.js-plugin-blob-tx/issues"
   },
   "scripts": {
-    "lint": "eslint '{src,test}/**/*.ts'",
+    "lint": "eslint 'src/**/*.ts'",
+    "lint:fix": "eslint --fix 'src/**/*.ts'",
     "build": "tsc --project tsconfig.build.json",
     "test": "jest --config=./test/jest.config.js"
   },
