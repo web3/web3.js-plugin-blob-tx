@@ -24,8 +24,9 @@ jobs:
               run: yarn build
             - name: Lint
               run: yarn run lint
-            - name: Tests
-              run: yarn run test
+#           run locally using your infura key and private key
+#            - name: Tests
+#              run: yarn run test
 
     maybe-release:
         name: release
@@ -38,20 +39,20 @@ jobs:
                 release-type: node
                 package-name: release-please-action
                 changelog-types: '[{"type":"feat","section":"Features","hidden":false},{"type":"fix","section":"Bug Fixes","hidden":false},{"type":"chore","section":"Miscellaneous","hidden":true}]'
-            
+
             - uses: actions/checkout@v3
               if: ${{ steps.release.outputs.release_created }}
-            
+
             - uses: actions/setup-node@v3
               with:
                 cache: 'yarn'
                 node-version: 18
                 registry-url: 'https://registry.npmjs.org'
               if: ${{ steps.release.outputs.release_created }}
-            
+
             - run: yarn install --frozen-lockfile
               if: ${{ steps.release.outputs.release_created }}
-            
+
             - run: yarn build
               if: ${{ steps.release.outputs.release_created }}
 
