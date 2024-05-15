@@ -24,10 +24,10 @@ describe('Web3BlobTxPlugin Tests', () => {
 			from: '0x7ed0e85b8e1e925600b4373e6d108f34ab38a401',
 			to: '0x7ed0e85b8e1e925600b4373e6d108f34ab38a401',
 			value: '0x0',
-			gasLimit: 5000000,
+			gasLimit: 500000000,
 			maxPriorityFeePerGas: 22380075395,
-			maxFeePerGas: 22380075395,
-			maxFeePerBlobGas: 265500069017,
+			maxFeePerGas: 69596969873,
+			maxFeePerBlobGas: 2655000690170,
 			blobsData: ['any data text'],
 		};
 		expect(Number(await web3.blobTx.estimateGas(txData))).toBeGreaterThan(0);
