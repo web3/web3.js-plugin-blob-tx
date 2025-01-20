@@ -1,6 +1,9 @@
 Web3Js Plugin for Blob Transactions (EIP4844)
 ===========
 
+#### Web3.js libraries are being sunset on March 4th, 2025. For migration guides and more details please refer to [Chainsafe blog](https://blog.chainsafe.io/web3-js-sunset/)
+
+
 This Web3Js plugin enhances the capabilities of Ethereum transactions by adding support for EIP4844 transactions, also known as "Blob transactions". EIP4844 introduces a new transaction format that allows for more efficient data storage and transmission on the Ethereum blockchain.
 
 ## Installation
